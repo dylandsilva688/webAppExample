@@ -16,15 +16,16 @@ pipeline {
                 }
 
                 agent {
-                    // 🧩 Give each matrix combination its own workspace
-                    // So parallel checkouts don't conflict
-                    customWorkspace "workspace/${BROWSER}-${OS}"
+                    node {
+                        label 'any' // run on any available node
+                        customWorkspace "workspace/${BROWSER}-${OS}"
+                    }
                 }
 
                 stages {
                     stage('Checkout') {
                         steps {
-                            // 🧹 Clean workspace before checkout
+                            // Clean workspace before pulling repo
                             deleteDir()
                             git(
                                 credentialsId: 'Github_username_password',
@@ -35,7 +36,6 @@ pipeline {
 
                     stage('Build WAR') {
                         steps {
-                            // 🪟 Use bat on Windows, sh on Linux
                             script {
                                 if (isUnix()) {
                                     sh 'mvn clean package'
@@ -46,7 +46,10 @@ pipeline {
                         }
                     }
 
-                    stage('Deploy to Tomcat') {
+                    stage('Deploy to Tomcat (Windows only)') {
+                        when {
+                            expression { !isUnix() } // Only deploy on Windows nodes
+                        }
                         steps {
                             deploy adapters: [
                                 tomcat9(
@@ -74,4 +77,5 @@ pipeline {
         }
     }
 }
+
 
