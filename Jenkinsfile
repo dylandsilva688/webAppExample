@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent none
 
     stages {
         stage('Matrix Build') {
@@ -15,31 +15,49 @@ pipeline {
                     }
                 }
 
+                agent {
+                    // 🧩 Give each matrix combination its own workspace
+                    // So parallel checkouts don't conflict
+                    customWorkspace "workspace/${BROWSER}-${OS}"
+                }
+
                 stages {
                     stage('Checkout') {
                         steps {
-                            git credentialsId: 'Github_username_password',
+                            // 🧹 Clean workspace before checkout
+                            deleteDir()
+                            git(
+                                credentialsId: 'Github_username_password',
                                 url: 'https://github.com/dylandsilva688/webAppExample.git'
+                            )
                         }
                     }
 
                     stage('Build WAR') {
                         steps {
-                            bat '"C:\\Program Files\\apache-maven-3.9.5-bin\\apache-maven-3.9.5\\bin\\mvn.cmd" clean package'
+                            // 🪟 Use bat on Windows, sh on Linux
+                            script {
+                                if (isUnix()) {
+                                    sh 'mvn clean package'
+                                } else {
+                                    bat '"C:\\Program Files\\apache-maven-3.9.5-bin\\apache-maven-3.9.5\\bin\\mvn.cmd" clean package'
+                                }
+                            }
                         }
                     }
 
                     stage('Deploy to Tomcat') {
                         steps {
-                            deploy adapters: [tomcat9(
-                              alternativeDeploymentContext: '', 
-                              credentialsId: '735a5106-4896-4c24-868a-56aaf0cd291c', 
-                              path: '', 
-                              url: 'http://localhost:8181'
-                            )
-                          ], 
-                          contextPath: 'webAppExample-${BROWSER}-${OS}', 
-                          war: '**/*.war'
+                            deploy adapters: [
+                                tomcat9(
+                                    alternativeDeploymentContext: '',
+                                    credentialsId: '735a5106-4896-4c24-868a-56aaf0cd291c',
+                                    path: '',
+                                    url: 'http://localhost:8181'
+                                )
+                            ],
+                            contextPath: "webAppExample-${BROWSER}-${OS}",
+                            war: '**/*.war'
                         }
                     }
                 }
