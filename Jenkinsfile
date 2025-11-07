@@ -39,7 +39,7 @@ pipeline {
                             )
                           ], 
                           contextPath: 'webAppExample-${BROWSER}-${OS}', 
-                          war: '**/*.war
+                          war: '**/*.war'
                         }
                     }
                 }
