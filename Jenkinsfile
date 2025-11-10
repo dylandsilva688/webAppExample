@@ -1,5 +1,5 @@
 pipeline {
-    agent none
+    agent any   // allows running on any available node
 
     stages {
         stage('Matrix Build') {
@@ -15,12 +15,8 @@ pipeline {
                     }
                 }
 
-                agent {
-                    node {
-                        label 'any' // run on any available node
-                        customWorkspace "workspace/${BROWSER}-${OS}"
-                    }
-                }
+                // Run on any available agent (controller or worker)
+                agent any
 
                 stages {
                     stage('Checkout') {
@@ -77,5 +73,5 @@ pipeline {
         }
     }
 }
-
+                         
 
